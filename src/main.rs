@@ -34,7 +34,6 @@ async fn main() {
     let mut threads: Option<u32> = None;
     let mut target_ip: Option<String> = None;
     let mut target_port: Option<u16> = None;
-    let mut ip_rangeq: Option<bool> = None;
 
     let mut i = 1;
     while i < args.len() {
@@ -92,12 +91,10 @@ async fn main() {
     for thread_id in 1..=threads {
         let source_ip: String = format!(
             "{}.{}.{}.{}",
-            thread_rng().gen_range(0..=255),
-            thread_rng().gen_range(0..=255),
-            thread_rng().gen_range(0..=255),
-            thread_id 
-        //  ^^^^^^^^^
-            // NOTE: optimise this later to eradicate the possibility of ip doubleups
+            192,
+            168,
+            5,
+            thread_rng().gen_range(0..=255)
         );
 
         let handle: JoinHandle<()> = tokio::spawn(attack(
