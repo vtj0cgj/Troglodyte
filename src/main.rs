@@ -22,7 +22,7 @@ fn input(prompt: &str) -> String {
 
 #[tokio::main]
 async fn main() {
-    println!("Troglodyte 3.0 By VTJ0cGJ\nThe creator does not endorse any unintended use of this software");
+    println!("Qhr 3.0 By VTJ0cGJ\nThe creator does not endorse any unintended use of this software");
 
     let args: Vec<String> = env::args().collect();
 
